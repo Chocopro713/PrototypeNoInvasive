@@ -1,0 +1,31 @@
+body {
+    display: flex;
+}
+
+#wrapper {
+    display: flex;
+    width: 100%;
+}
+
+#sidebar-wrapper {
+    min-width: 250px;
+    max-width: 250px;
+}
+
+#page-content-wrapper {
+    flex: 1;
+    padding: 20px;
+}
+
+.sidebar-heading {
+    padding: 1rem 1.25rem;
+    font-size: 1.2rem;
+}
+
+.list-group-item {
+    padding: 20px 30px;
+}
+
+.table {
+    margin-top: 20px;
+}
