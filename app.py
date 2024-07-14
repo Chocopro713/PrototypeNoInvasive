@@ -4,6 +4,10 @@ import json
 app = Flask(__name__)
 
 @app.route('/')
+def login():
+    return render_template('login.html')
+
+@app.route('/dashboard')
 def dashboard():
     return render_template('dashboard.html')
 
@@ -14,7 +18,7 @@ def reports():
 @app.route('/logout')
 def logout():
     # Aquí puedes añadir la lógica de cierre de sesión
-    return redirect(url_for('dashboard'))
+    return redirect(url_for('login'))
 
 @app.route('/data')
 def data():
