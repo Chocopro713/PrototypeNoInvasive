@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+
+{% block title %}Agregar Graficos{% endblock %}
+
+{% block content %}
+
+<div class="container mt-5">
+    <h2>Subir archivo Excel</h2>
+    <form action="{{ url_for('upload_excel') }}" method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="file">Seleccione archivo Excel</label>
+            <input type="file" name="file" id="file" class="form-control">
+        </div>
+        <button type="submit" class="btn btn-primary">Upload</button>
+    </form>
+</div>
+
+{% endblock %}
