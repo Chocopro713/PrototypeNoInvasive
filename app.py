@@ -1,14 +1,22 @@
-from flask import Flask, render_template, redirect, request, url_for, jsonify
+from flask import Flask, render_template, redirect, request, url_for, jsonify, send_file
 import json
 import pandas as pd
+import matplotlib.pyplot as plt
+import io
 import os
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads/'
 
 @app.route('/')
+@app.route('/login')
 def login():
     return render_template('login.html')
+
+# Ruta para la página de registro
+@app.route('/register')
+def register():
+    return render_template('register.html')
 
 @app.route('/dashboard')
 def dashboard():
@@ -17,6 +25,46 @@ def dashboard():
 @app.route('/reports')
 def reports():
     return render_template('reports.html')
+
+# Ruta para generar la gráfica "relajado"
+@app.route('/plot_relajado')
+def plot_relajado():
+    df = pd.read_excel("data/Lectura_relajado.xlsx")  # Cambia por la ruta correcta
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(df['Segundos'], df['Valor_GSR'], label='Onda Alfa')
+    plt.xlabel('Tiempo')
+    plt.ylabel('Amplitud')
+    plt.title('Ondas de recepción - Relajado')
+    plt.legend()
+
+    # Guardar el gráfico en memoria
+    img = io.BytesIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+    plt.close()
+
+    return send_file(img, mimetype='image/png')
+
+# Ruta para generar la gráfica "agitado"
+@app.route('/plot_agitado')
+def plot_agitado():
+    df = pd.read_excel("data/Lectura_agitado.xlsx")  # Cambia por la ruta correcta
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(df['Segundos'], df['Valor_GSR'], label='Onda Alfa')
+    plt.xlabel('Tiempo')
+    plt.ylabel('Amplitud')
+    plt.title('Ondas de recepción - Agitado')
+    plt.legend()
+
+    # Guardar el gráfico en memoria
+    img = io.BytesIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+    plt.close()
+
+    return send_file(img, mimetype='image/png')
 
 # Ruta para la subida de archivos
 @app.route('/upload_excel', methods=['GET', 'POST'])
@@ -51,7 +99,6 @@ def report_data():
     with open('data/reports.json') as f:
         data = json.load(f)
     return jsonify(data)
-
 
 if __name__ == '__main__':
     app.run(debug=True)

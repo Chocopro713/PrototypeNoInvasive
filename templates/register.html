@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrarse</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login_style.css') }}">
+</head>
+<body class="flex items-center justify-center h-screen">
+    <div class="login-container text-center">
+        <div class="mb-6">
+            <div class="mx-auto rounded-full h-24 w-24 border-2 border-white flex items-center justify-center">
+                <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A6.002 6.002 0 0118 18M12 14l0-0m0 0a5 5 0 110-10 5 5 0 010 10z"></path></svg>
+            </div>
+        </div>
+        <form id="register-form" action="{{ url_for('dashboard') }}">
+            <div class="relative mb-4">
+                <input type="text" class="input-field block w-full px-12 py-3 rounded-lg text-white focus:outline-none" placeholder="Nombres">
+            </div>
+            <div class="relative mb-4">
+                <input type="text" class="input-field block w-full px-12 py-3 rounded-lg text-white focus:outline-none" placeholder="Apellidos">
+            </div>
+            <div class="relative mb-4">
+                <input type="email" class="input-field block w-full px-12 py-3 rounded-lg text-white focus:outline-none" placeholder="Correo">
+            </div>
+            <div class="relative mb-4">
+                <input type="password" class="input-field block w-full px-12 py-3 rounded-lg text-white focus:outline-none" placeholder="Contraseña">
+            </div>
+            <div class="relative mb-6">
+                <input type="date" class="input-field block w-full px-12 py-3 rounded-lg text-white focus:outline-none" placeholder="Fecha de Nacimiento">
+            </div>
+            <button class="create-btn block w-full py-3 rounded-lg text-white text-lg font-semibold hover:bg-pink-600 transition-colors duration-300">Registrarse</button>
+            <div class="mt-6">
+                <a href="{{ url_for('login') }}" class="create-btn block w-full py-3 rounded-lg text-white text-lg font-semibold hover:bg-pink-600 transition-colors duration-300">Volver al inicio de sesión</a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

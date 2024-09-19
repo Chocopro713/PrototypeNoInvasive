@@ -4,9 +4,20 @@
 
 {% block content %}
 <h1 class="my-4">Dashboard</h1>
+
+<!-- Sección para la gráfica de Chart.js -->
 <canvas id="myChart" width="400" height="200"></canvas>
 
+<!-- Gráfica de "Relajado" -->
+<h2>Gráfica Relajado</h2>
+<img src="{{ url_for('plot_relajado') }}" alt="Gráfica Relajado" class="img-fluid" />
+
+<!-- Gráfica de "Agitado" -->
+<h2>Gráfica Agitado</h2>
+<img src="{{ url_for('plot_agitado') }}" alt="Gráfica Agitado" class="img-fluid" />
+
 <script>
+    // Código para la gráfica de Chart.js (si ya lo tienes implementado)
     fetch('/data')
     .then(response => response.json())
     .then(data => {
@@ -35,4 +46,5 @@
         });
     });
 </script>
+
 {% endblock %}
