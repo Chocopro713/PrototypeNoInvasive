@@ -20,7 +20,23 @@ def register():
 
 @app.route('/dashboard')
 def dashboard():
-    return render_template('dashboard.html')
+    # Aquí simulas datos
+    data = {
+        'areas': ['Digitalización', 'Administración', 'Soporte TI', 'Atención al Cliente', 'Fuerza de Ventas', 'Otro'],
+        'deserciones': [279, 173, 148, 156, 128, 113],
+        'femenino': [37, 52, 43, 38, 42, 28],
+        'masculino': [63, 48, 57, 62, 58, 72]
+    }
+    df = pd.DataFrame(data)
+    
+    # Convertimos los datos a listas para enviarlos al HTML
+    areas = df['areas'].tolist()
+    deserciones = df['deserciones'].tolist()
+    femenino = df['femenino'].tolist()
+    masculino = df['masculino'].tolist()
+
+    return render_template('dashboard.html', areas=areas, deserciones=deserciones, femenino=femenino, masculino=masculino)
+    # return render_template('dashboard.html')
 
 @app.route('/reports')
 def reports():
@@ -102,3 +118,5 @@ def report_data():
 
 if __name__ == '__main__':
     app.run(debug=True)
+    # app.run(host='85.31.235.126/', port=80) 
+    # Cambia el puerto 5000 a 80

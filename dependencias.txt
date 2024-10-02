@@ -1,0 +1,3 @@
+Dependencias a instalar
+
+pip install Flask pandas matplotlib openpyxl xlrd Werkzeug
