@@ -2,54 +2,21 @@ from flask import Flask, render_template, redirect, request, url_for, jsonify, s
 import json
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')  # Cambia el backend a Agg
 import io
 import os
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads/'
-
-@app.route('/')
-@app.route('/login')
-def login():
-    return render_template('login.html')
-
-# Ruta para la página de registro
-@app.route('/register')
-def register():
-    return render_template('register.html')
-
-@app.route('/dashboard')
-def dashboard():
-    # Aquí simulas datos
-    data = {
-        'areas': ['Digitalización', 'Administración', 'Soporte TI', 'Atención al Cliente', 'Fuerza de Ventas', 'Otro'],
-        'deserciones': [279, 173, 148, 156, 128, 113],
-        'femenino': [37, 52, 43, 38, 42, 28],
-        'masculino': [63, 48, 57, 62, 58, 72]
-    }
-    df = pd.DataFrame(data)
-    
-    # Convertimos los datos a listas para enviarlos al HTML
-    areas = df['areas'].tolist()
-    deserciones = df['deserciones'].tolist()
-    femenino = df['femenino'].tolist()
-    masculino = df['masculino'].tolist()
-
-    return render_template('dashboard.html', areas=areas, deserciones=deserciones, femenino=femenino, masculino=masculino)
-    # return render_template('dashboard.html')
-
-@app.route('/reports')
-def reports():
-    return render_template('reports.html')
-
 # Ruta para generar la gráfica "relajado"
 @app.route('/plot_relajado')
 def plot_relajado():
-    df = pd.read_excel("data/Lectura_relajado.xlsx")  # Cambia por la ruta correcta
+    df = pd.read_excel("data/Lectura_relajado.xlsx")
 
     plt.figure(figsize=(10, 6))
     plt.plot(df['Segundos'], df['Valor_GSR'], label='Onda Alfa')
-    plt.xlabel('Tiempo')
+    plt.xlabel('Tiempo (Segundos)')
     plt.ylabel('Amplitud')
     plt.title('Ondas de recepción - Relajado')
     plt.legend()
@@ -65,11 +32,11 @@ def plot_relajado():
 # Ruta para generar la gráfica "agitado"
 @app.route('/plot_agitado')
 def plot_agitado():
-    df = pd.read_excel("data/Lectura_agitado.xlsx")  # Cambia por la ruta correcta
+    df = pd.read_excel("data/Lectura_agitado.xlsx")
 
     plt.figure(figsize=(10, 6))
     plt.plot(df['Segundos'], df['Valor_GSR'], label='Onda Alfa')
-    plt.xlabel('Tiempo')
+    plt.xlabel('Tiempo (Segundos)')
     plt.ylabel('Amplitud')
     plt.title('Ondas de recepción - Agitado')
     plt.legend()
@@ -80,7 +47,88 @@ def plot_agitado():
     img.seek(0)
     plt.close()
 
+    return send_file(img, mimetype='image/png') 
+
+# Ruta para generar la gráfica de Mind Monitor
+@app.route('/plot_mind_monitor')
+def plot_mind_monitor():
+    df = pd.read_excel("data/mindMonitor.xlsx")
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(df['TimeStamp'], df['Delta_TP9'], label='Onda Delta')
+    # Si quieres agregar más ondas cerebrales, puedes descomentar las siguientes líneas:
+    # plt.plot(df['TimeStamp'], df['Delta_AF7'], label='Onda Beta')
+    # plt.plot(df['TimeStamp'], df['Theta_TP9'], label='Onda Theta')
+    plt.xlabel('Tiempo (TimeStamp)')
+    plt.ylabel('Frecuencia en Hz')
+    plt.title('Ondas Cerebrales - Mind Monitor')
+    plt.legend()
+
+    # Guardar el gráfico en memoria
+    img = io.BytesIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+    plt.close()
+
     return send_file(img, mimetype='image/png')
+
+@app.route('/')
+@app.route('/login')
+def login():
+    return render_template('login.html')
+
+# Ruta para la página de registro
+@app.route('/register')
+def register():
+    return render_template('register.html')
+
+@app.route('/dashboard')
+def dashboard():
+    return render_template('dashboard.html')
+
+@app.route('/reports')
+def reports():
+    return render_template('reports.html')
+
+# # Ruta para generar la gráfica "relajado"
+# @app.route('/plot_relajado')
+# def plot_relajado():
+#     df = pd.read_excel("data/Lectura_relajado.xlsx")  # Cambia por la ruta correcta
+
+#     plt.figure(figsize=(10, 6))
+#     plt.plot(df['Segundos'], df['Valor_GSR'], label='Onda Alfa')
+#     plt.xlabel('Tiempo')
+#     plt.ylabel('Amplitud')
+#     plt.title('Ondas de recepción - Relajado')
+#     plt.legend()
+
+#     # Guardar el gráfico en memoria
+#     img = io.BytesIO()
+#     plt.savefig(img, format='png')
+#     img.seek(0)
+#     plt.close()
+
+#     return send_file(img, mimetype='image/png')
+
+# # Ruta para generar la gráfica "agitado"
+# @app.route('/plot_agitado')
+# def plot_agitado():
+#     df = pd.read_excel("data/Lectura_agitado.xlsx")  # Cambia por la ruta correcta
+
+#     plt.figure(figsize=(10, 6))
+#     plt.plot(df['Segundos'], df['Valor_GSR'], label='Onda Alfa')
+#     plt.xlabel('Tiempo')
+#     plt.ylabel('Amplitud')
+#     plt.title('Ondas de recepción - Agitado')
+#     plt.legend()
+
+#     # Guardar el gráfico en memoria
+#     img = io.BytesIO()
+#     plt.savefig(img, format='png')
+#     img.seek(0)
+#     plt.close()
+
+#     return send_file(img, mimetype='image/png')
 
 # Ruta para la subida de archivos
 @app.route('/upload_excel', methods=['GET', 'POST'])

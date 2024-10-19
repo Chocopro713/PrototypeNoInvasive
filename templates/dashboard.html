@@ -8,127 +8,35 @@
 <!-- Contenedor de la grilla 3x2 -->
 <div class="container-fluid">
     <div class="row">
-        <!-- Primera tarjeta -->
+        <!-- Primera tarjeta: Gráfico Relajado -->
         <div class="col-lg-4 mb-4">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <canvas id="chart1"></canvas>
-                    <p class="description">Deserciones por Área</p>
+                    <img src="{{ url_for('plot_relajado') }}" alt="Gráfica Relajado" class="img-fluid">
+                    <p class="description">Ondas de recepción - Relajado</p>
                 </div>
             </div>
         </div>
 
-        <!-- Segunda tarjeta -->
+        <!-- Segunda tarjeta: Gráfico Agitado -->
         <div class="col-lg-4 mb-4">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <canvas id="chart2"></canvas>
-                    <p class="description">Deserciones por Género</p>
+                    <img src="{{ url_for('plot_agitado') }}" alt="Gráfica Agitado" class="img-fluid">
+                    <p class="description">Ondas de recepción - Agitado</p>
                 </div>
             </div>
         </div>
 
-        <!-- Tercera tarjeta -->
+        <!-- Nueva tarjeta: Gráfico Mind Monitor -->
         <div class="col-lg-4 mb-4">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <canvas id="chart3"></canvas>
-                    <p class="description">Deserciones por Rango de Edad</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Cuarta tarjeta -->
-        <div class="col-lg-4 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <canvas id="chart4"></canvas>
-                    <p class="description">Tasa de Deserción</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Quinta tarjeta -->
-        <div class="col-lg-4 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <canvas id="chart5"></canvas>
-                    <p class="description">Relación Total Activa</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Sexta tarjeta -->
-        <div class="col-lg-4 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <canvas id="chart6"></canvas>
-                    <p class="description">Comparación de Áreas</p>
+                    <img src="{{ url_for('plot_mind_monitor') }}" alt="Gráfica Mind Monitor" class="img-fluid">
+                    <p class="description">Ondas Cerebrales - Mind Monitor</p>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-<!-- Scripts para gráficos con Chart.js -->
-<script>
-    // Datos de ejemplo enviados desde el servidor
-    const areas = {{ areas|tojson }};
-    const deserciones = {{ deserciones|tojson }};
-    const femenino = {{ femenino|tojson }};
-    const masculino = {{ masculino|tojson }};
-
-    // Gráfico de barras para deserciones por área (Chart 1)
-    const ctx1 = document.getElementById('chart1').getContext('2d');
-    new Chart(ctx1, {
-        type: 'bar',
-        data: {
-            labels: areas,
-            datasets: [{
-                label: 'Deserciones',
-                data: deserciones,
-                backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                borderColor: 'rgba(75, 192, 192, 1)',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            scales: {
-                y: { beginAtZero: true }
-            }
-        }
-    });
-
-    // Gráfico de pastel para deserciones por género (Chart 2)
-    const ctx2 = document.getElementById('chart2').getContext('2d');
-    new Chart(ctx2, {
-        type: 'pie',
-        data: {
-            labels: ['Femenino', 'Masculino'],
-            datasets: [{
-                data: [femenino.reduce((a, b) => a + b, 0), masculino.reduce((a, b) => a + b, 0)],
-                backgroundColor: ['#FF6384', '#36A2EB'],
-                hoverOffset: 4
-            }]
-        }
-    });
-
-    // Ejemplo de otro gráfico para deserciones por rango de edad (Chart 3)
-    const ctx3 = document.getElementById('chart3').getContext('2d');
-    new Chart(ctx3, {
-        type: 'line',
-        data: {
-            labels: ['18-24', '25-34', '35-44', '45+'],
-            datasets: [{
-                label: 'Deserciones',
-                data: [50, 80, 60, 30],  // Ejemplo de valores
-                fill: false,
-                borderColor: 'rgb(75, 192, 192)',
-                tension: 0.1
-            }]
-        }
-    });
-
-    // Puedes generar más gráficos similares para las otras tarjetas
-</script>
 {% endblock %}
