@@ -9,68 +9,121 @@ import os
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads/'
-# Ruta para generar la gráfica "relajado"
-@app.route('/plot_relajado')
-def plot_relajado():
+
+@app.route('/data_relajado')
+def data_relajado():
     df = pd.read_excel("data/Lectura_relajado.xlsx")
+    data = {
+        'segundos': df['Segundos'].tolist(),
+        'valor_gsr': df['Valor_GSR'].tolist()
+    }
+    return jsonify(data)
 
-    plt.figure(figsize=(10, 6))
-    plt.plot(df['Segundos'], df['Valor_GSR'], label='Onda Alfa')
-    plt.xlabel('Tiempo (Segundos)')
-    plt.ylabel('Amplitud')
-    plt.title('Ondas de recepción - Relajado')
-    plt.legend()
-
-    # Guardar el gráfico en memoria
-    img = io.BytesIO()
-    plt.savefig(img, format='png')
-    img.seek(0)
-    plt.close()
-
-    return send_file(img, mimetype='image/png')
-
-# Ruta para generar la gráfica "agitado"
-@app.route('/plot_agitado')
-def plot_agitado():
+# Ruta para los datos de Lectura Agitado
+@app.route('/data_agitado')
+def data_agitado():
     df = pd.read_excel("data/Lectura_agitado.xlsx")
+    data = {
+        'segundos': df['Segundos'].tolist(),
+        'valor_gsr': df['Valor_GSR'].tolist()
+    }
+    return jsonify(data)
 
-    plt.figure(figsize=(10, 6))
-    plt.plot(df['Segundos'], df['Valor_GSR'], label='Onda Alfa')
-    plt.xlabel('Tiempo (Segundos)')
-    plt.ylabel('Amplitud')
-    plt.title('Ondas de recepción - Agitado')
-    plt.legend()
-
-    # Guardar el gráfico en memoria
-    img = io.BytesIO()
-    plt.savefig(img, format='png')
-    img.seek(0)
-    plt.close()
-
-    return send_file(img, mimetype='image/png') 
-
-# Ruta para generar la gráfica de Mind Monitor
-@app.route('/plot_mind_monitor')
-def plot_mind_monitor():
+# Ruta para los datos del Mind Monitor
+@app.route('/data_mind_monitor')
+def data_mind_monitor():
     df = pd.read_excel("data/mindMonitor.xlsx")
+    data = {
+        'timestamp': df['TimeStamp'].tolist(),
+        'delta_tp9': df['Delta_TP9'].tolist(),
+        'theta_tp9': df['Theta_TP9'].tolist(),
+        'beta_af7': df['Beta_AF7'].tolist()
+    }
+    return jsonify(data)
 
-    plt.figure(figsize=(10, 6))
-    plt.plot(df['TimeStamp'], df['Delta_TP9'], label='Onda Delta')
-    # Si quieres agregar más ondas cerebrales, puedes descomentar las siguientes líneas:
-    # plt.plot(df['TimeStamp'], df['Delta_AF7'], label='Onda Beta')
-    # plt.plot(df['TimeStamp'], df['Theta_TP9'], label='Onda Theta')
-    plt.xlabel('Tiempo (TimeStamp)')
-    plt.ylabel('Frecuencia en Hz')
-    plt.title('Ondas Cerebrales - Mind Monitor')
-    plt.legend()
+# Ruta para los datos comparativos Relajado vs Agitado
+@app.route('/data_comparativo')
+def data_comparativo():
+    df_relajado = pd.read_excel("data/Lectura_relajado.xlsx")
+    df_agitado = pd.read_excel("data/Lectura_agitado.xlsx")
+    data = {
+        'segundos_relajado': df_relajado['Segundos'].tolist(),
+        'valor_gsr_relajado': df_relajado['Valor_GSR'].tolist(),
+        'segundos_agitado': df_agitado['Segundos'].tolist(),
+        'valor_gsr_agitado': df_agitado['Valor_GSR'].tolist()
+    }
+    return jsonify(data)
 
-    # Guardar el gráfico en memoria
-    img = io.BytesIO()
-    plt.savefig(img, format='png')
-    img.seek(0)
-    plt.close()
+# Ruta para los datos agrupados por intervalos de tiempo (Relajado vs Agitado)
+@app.route('/data_barras_intervalos')
+def data_barras_intervalos():
+    df_relajado = pd.read_excel("data/Lectura_relajado.xlsx")
+    df_agitado = pd.read_excel("data/Lectura_agitado.xlsx")
 
-    return send_file(img, mimetype='image/png')
+    df_relajado['Intervalo'] = df_relajado['Segundos'] // 10 * 10
+    df_agitado['Intervalo'] = df_agitado['Segundos'] // 10 * 10
+
+    relajado_promedio = df_relajado.groupby('Intervalo')['Valor_GSR'].mean()
+    agitado_promedio = df_agitado.groupby('Intervalo')['Valor_GSR'].mean()
+
+    data = {
+        'intervalos': relajado_promedio.index.tolist(),
+        'relajado': relajado_promedio.tolist(),
+        'agitado': agitado_promedio.tolist()
+    }
+    return jsonify(data)
+
+@app.route('/data_scatter_relajado_agitado')
+def data_scatter_relajado_agitado():
+    df_relajado = pd.read_excel("data/Lectura_relajado.xlsx")
+    df_agitado = pd.read_excel("data/Lectura_agitado.xlsx")
+    data = {
+        'segundos_relajado': df_relajado['Segundos'].tolist(),
+        'valor_gsr_relajado': df_relajado['Valor_GSR'].tolist(),
+        'segundos_agitado': df_agitado['Segundos'].tolist(),
+        'valor_gsr_agitado': df_agitado['Valor_GSR'].tolist()
+    }
+    return jsonify(data)
+
+@app.route('/data_radar_mind_monitor')
+def data_radar_mind_monitor():
+    df = pd.read_excel("data/mindMonitor.xlsx")
+    # Tomar promedios para comparar cada onda cerebral
+    avg_delta = df['Delta_TP9'].mean()
+    avg_theta = df['Theta_TP9'].mean()
+    avg_beta = df['Beta_AF7'].mean()
+
+    data = {
+        'labels': ['Delta', 'Theta', 'Beta'],
+        'values': [avg_delta, avg_theta, avg_beta]
+    }
+    return jsonify(data)
+
+@app.route('/data_stacked_mind_monitor')
+def data_stacked_mind_monitor():
+    df = pd.read_excel("data/mindMonitor.xlsx")
+    data = {
+        'timestamp': df['TimeStamp'].tolist(),
+        'delta_tp9': df['Delta_TP9'].tolist(),
+        'theta_tp9': df['Theta_TP9'].tolist(),
+        'beta_af7': df['Beta_AF7'].tolist()
+    }
+    return jsonify(data)
+
+
+@app.route('/data_donut_mind_monitor')
+def data_donut_mind_monitor():
+    df = pd.read_excel("data/mindMonitor.xlsx")
+    # Sumar los valores de cada tipo de onda para obtener la distribución total
+    total_delta = df['Delta_TP9'].sum()
+    total_theta = df['Theta_TP9'].sum()
+    total_beta = df['Beta_AF7'].sum()
+    
+    data = {
+        'labels': ['Delta', 'Theta', 'Beta'],
+        'values': [total_delta, total_theta, total_beta]
+    }
+    return jsonify(data)
 
 @app.route('/')
 @app.route('/login')
@@ -89,46 +142,6 @@ def dashboard():
 @app.route('/reports')
 def reports():
     return render_template('reports.html')
-
-# # Ruta para generar la gráfica "relajado"
-# @app.route('/plot_relajado')
-# def plot_relajado():
-#     df = pd.read_excel("data/Lectura_relajado.xlsx")  # Cambia por la ruta correcta
-
-#     plt.figure(figsize=(10, 6))
-#     plt.plot(df['Segundos'], df['Valor_GSR'], label='Onda Alfa')
-#     plt.xlabel('Tiempo')
-#     plt.ylabel('Amplitud')
-#     plt.title('Ondas de recepción - Relajado')
-#     plt.legend()
-
-#     # Guardar el gráfico en memoria
-#     img = io.BytesIO()
-#     plt.savefig(img, format='png')
-#     img.seek(0)
-#     plt.close()
-
-#     return send_file(img, mimetype='image/png')
-
-# # Ruta para generar la gráfica "agitado"
-# @app.route('/plot_agitado')
-# def plot_agitado():
-#     df = pd.read_excel("data/Lectura_agitado.xlsx")  # Cambia por la ruta correcta
-
-#     plt.figure(figsize=(10, 6))
-#     plt.plot(df['Segundos'], df['Valor_GSR'], label='Onda Alfa')
-#     plt.xlabel('Tiempo')
-#     plt.ylabel('Amplitud')
-#     plt.title('Ondas de recepción - Agitado')
-#     plt.legend()
-
-#     # Guardar el gráfico en memoria
-#     img = io.BytesIO()
-#     plt.savefig(img, format='png')
-#     img.seek(0)
-#     plt.close()
-
-#     return send_file(img, mimetype='image/png')
 
 # Ruta para la subida de archivos
 @app.route('/upload_excel', methods=['GET', 'POST'])

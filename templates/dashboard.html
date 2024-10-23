@@ -5,38 +5,386 @@
 {% block content %}
 <h1 class="my-4">Dashboard</h1>
 
-<!-- Contenedor de la grilla 3x2 -->
 <div class="container-fluid">
     <div class="row">
-        <!-- Primera tarjeta: Gráfico Relajado -->
-        <div class="col-lg-4 mb-4">
+        <!-- Gráfico Relajado -->
+        <div class="col-lg-6 mb-4">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <img src="{{ url_for('plot_relajado') }}" alt="Gráfica Relajado" class="img-fluid">
+                    <canvas id="chartRelajado"></canvas>
                     <p class="description">Ondas de recepción - Relajado</p>
                 </div>
             </div>
         </div>
 
-        <!-- Segunda tarjeta: Gráfico Agitado -->
-        <div class="col-lg-4 mb-4">
+        <!-- Gráfico Agitado -->
+        <div class="col-lg-6 mb-4">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <img src="{{ url_for('plot_agitado') }}" alt="Gráfica Agitado" class="img-fluid">
+                    <canvas id="chartAgitado"></canvas>
                     <p class="description">Ondas de recepción - Agitado</p>
                 </div>
             </div>
         </div>
 
-        <!-- Nueva tarjeta: Gráfico Mind Monitor -->
-        <div class="col-lg-4 mb-4">
+        <!-- Gráfico Comparativo Relajado vs Agitado -->
+        <div class="col-lg-6 mb-4">
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <img src="{{ url_for('plot_mind_monitor') }}" alt="Gráfica Mind Monitor" class="img-fluid">
+                    <canvas id="chartComparativo"></canvas>
+                    <p class="description">Comparación Relajado vs Agitado</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico Mind Monitor -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <canvas id="chartMindMonitor"></canvas>
                     <p class="description">Ondas Cerebrales - Mind Monitor</p>
                 </div>
             </div>
         </div>
+
+        <!-- Gráfico de Barras Agrupadas (Intervalos) -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <canvas id="chartBarras"></canvas>
+                    <p class="description">Comparación Promedio GSR por Intervalos</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico de Dispersión Relajado vs Agitado -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <canvas id="chartScatter"></canvas>
+                    <p class="description">Dispersión Relajado vs Agitado</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico de Donut para Ondas Cerebrales -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <canvas id="chartDonutMindMonitor"></canvas>
+                    <p class="description">Distribución de Ondas Cerebrales</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico de Radar para Ondas Cerebrales -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <canvas id="chartRadar"></canvas>
+                    <p class="description">Comparación de Ondas Cerebrales (Radar)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico de Líneas Apiladas para Ondas Cerebrales -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <canvas id="chartStackedArea"></canvas>
+                    <p class="description">Ondas Cerebrales Apiladas</p>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
+
+<!-- Scripts para generar las gráficas con Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Gráfico Relajado
+    fetch('/data_relajado')
+    .then(response => response.json())
+    .then(data => {
+        const ctx = document.getElementById('chartRelajado').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.segundos,
+                datasets: [{
+                    label: 'Onda Alfa',
+                    data: data.valor_gsr,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    fill: false
+                }]
+            },
+            options: {
+                scales: {
+                    x: { title: { display: true, text: 'Segundos' } },
+                    y: { title: { display: true, text: 'Amplitud' }, beginAtZero: true }
+                }
+            }
+        });
+    });
+
+    // Gráfico Agitado
+    fetch('/data_agitado')
+    .then(response => response.json())
+    .then(data => {
+        const ctx = document.getElementById('chartAgitado').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.segundos,
+                datasets: [{
+                    label: 'Onda Alfa',
+                    data: data.valor_gsr,
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    fill: false
+                }]
+            },
+            options: {
+                scales: {
+                    x: { title: { display: true, text: 'Segundos' } },
+                    y: { title: { display: true, text: 'Amplitud' }, beginAtZero: true }
+                }
+            }
+        });
+    });
+
+    // Gráfico Comparativo Relajado vs Agitado
+    fetch('/data_comparativo')
+    .then(response => response.json())
+    .then(data => {
+        const ctx = document.getElementById('chartComparativo').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.segundos_relajado,
+                datasets: [
+                    {
+                        label: 'Relajado',
+                        data: data.valor_gsr_relajado,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        fill: false
+                    },
+                    {
+                        label: 'Agitado',
+                        data: data.valor_gsr_agitado,
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                scales: {
+                    x: { title: { display: true, text: 'Segundos' } },
+                    y: { title: { display: true, text: 'Amplitud' }, beginAtZero: true }
+                }
+            }
+        });
+    });
+
+    // Gráfico Mind Monitor
+    fetch('/data_mind_monitor')
+    .then(response => response.json())
+    .then(data => {
+        const ctx = document.getElementById('chartMindMonitor').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.timestamp,
+                datasets: [
+                    {
+                        label: 'Onda Delta',
+                        data: data.delta_tp9,
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        fill: false
+                    },
+                    {
+                        label: 'Onda Theta',
+                        data: data.theta_tp9,
+                        borderColor: 'rgba(255, 159, 64, 1)',
+                        fill: false
+                    },
+                    {
+                        label: 'Onda Beta',
+                        data: data.beta_af7,
+                        borderColor: 'rgba(153, 102, 255, 1)',
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                scales: {
+                    x: { title: { display: true, text: 'Timestamp' } },
+                    y: { title: { display: true, text: 'Frecuencia en Hz' }, beginAtZero: true }
+                }
+            }
+        });
+    });
+
+    // Gráfico de Barras Agrupadas (Relajado vs Agitado por intervalos)
+    fetch('/data_barras_intervalos')
+    .then(response => response.json())
+    .then(data => {
+        const ctx = document.getElementById('chartBarras').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.intervalos,
+                datasets: [
+                    {
+                        label: 'Relajado',
+                        data: data.relajado,
+                        backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Agitado',
+                        data: data.agitado,
+                        backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                scales: {
+                    x: { title: { display: true, text: 'Intervalos (Segundos)' } },
+                    y: { title: { display: true, text: 'Valor GSR Promedio' }, beginAtZero: true }
+                }
+            }
+        });
+    });
+
+    // Gráfico de Dispersión Relajado vs Agitado
+    fetch('/data_scatter_relajado_agitado')
+    .then(response => response.json())
+    .then(data => {
+        const ctx = document.getElementById('chartScatter').getContext('2d');
+        new Chart(ctx, {
+            type: 'scatter',
+            data: {
+                datasets: [
+                    {
+                        label: 'Relajado',
+                        data: data.segundos_relajado.map((segundo, index) => ({
+                            x: segundo,
+                            y: data.valor_gsr_relajado[index]
+                        })),
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                    },
+                    {
+                        label: 'Agitado',
+                        data: data.segundos_agitado.map((segundo, index) => ({
+                            x: segundo,
+                            y: data.valor_gsr_agitado[index]
+                        })),
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                    }
+                ]
+            },
+            options: {
+                scales: {
+                    x: { title: { display: true, text: 'Segundos' } },
+                    y: { title: { display: true, text: 'Valor GSR' }, beginAtZero: true }
+                }
+            }
+        });
+    });
+
+    // Gráfico de Donut para Ondas Cerebrales (Delta, Theta, Beta)
+    fetch('/data_donut_mind_monitor')
+    .then(response => response.json())
+    .then(data => {
+        console.log(data);  // Revisa los datos aquí en la consola
+        const ctx = document.getElementById('chartDonutMindMonitor').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    data: data.values,
+                    backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'],
+                    hoverOffset: 4
+                }]
+            }
+        });
+    });
+
+    // Gráfico de Radar para Ondas Cerebrales
+    fetch('/data_radar_mind_monitor')
+    .then(response => response.json())
+    .then(data => {
+        console.log(data);  // Revisa los datos aquí en la consola
+        const ctx = document.getElementById('chartRadar').getContext('2d');
+        new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Promedio Ondas Cerebrales',
+                    data: data.values,
+                    backgroundColor: 'rgba(179, 181, 198, 0.2)',
+                    borderColor: 'rgba(179, 181, 198, 1)',
+                    pointBackgroundColor: 'rgba(179, 181, 198, 1)'
+                }]
+            },
+            options: {
+                scale: {
+                    ticks: { beginAtZero: true }
+                }
+            }
+        });
+    });
+
+    // Gráfico de Líneas Apiladas para Ondas Cerebrales
+    fetch('/data_stacked_mind_monitor')
+    .then(response => response.json())
+    .then(data => {
+        console.log(data);  // Revisa los datos aquí en la consola
+        const ctx = document.getElementById('chartStackedArea').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.timestamp,
+                datasets: [
+                    {
+                        label: 'Delta',
+                        data: data.delta_tp9,
+                        fill: true,
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                    },
+                    {
+                        label: 'Theta',
+                        data: data.theta_tp9,
+                        fill: true,
+                        backgroundColor: 'rgba(255, 206, 86, 0.2)',
+                        borderColor: 'rgba(255, 206, 86, 1)',
+                    },
+                    {
+                        label: 'Beta',
+                        data: data.beta_af7,
+                        fill: true,
+                        backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                        borderColor: 'rgba(153, 102, 255, 1)',
+                    }
+                ]
+            },
+            options: {
+                scales: {
+                    x: { title: { display: true, text: 'Timestamp' } },
+                    y: { title: { display: true, text: 'Frecuencia en Hz' }, beginAtZero: true }
+                }
+            }
+        });
+    });
+
+</script>
 {% endblock %}
