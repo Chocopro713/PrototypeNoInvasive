@@ -15,23 +15,23 @@
                 <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A6.002 6.002 0 0118 18M12 14l0-0m0 0a5 5 0 110-10 5 5 0 010 10z"></path></svg>
             </div>
         </div>
-        <form id="register-form" action="{{ url_for('dashboard') }}">
+        <form id="register-form" method="POST" action="{{ url_for('register') }}">
             <div class="relative mb-4">
-                <input type="text" class="input-field block w-full px-12 py-3 rounded-lg text-white focus:outline-none" placeholder="Nombres">
+                <input type="text" name="nombres" class="input-field block w-full px-12 py-3 rounded-lg text-white focus:outline-none" placeholder="Nombres" required>
             </div>
             <div class="relative mb-4">
-                <input type="text" class="input-field block w-full px-12 py-3 rounded-lg text-white focus:outline-none" placeholder="Apellidos">
+                <input type="text" name="apellidos" class="input-field block w-full px-12 py-3 rounded-lg text-white focus:outline-none" placeholder="Apellidos" required>
             </div>
             <div class="relative mb-4">
-                <input type="email" class="input-field block w-full px-12 py-3 rounded-lg text-white focus:outline-none" placeholder="Correo">
+                <input type="email" name="correo" class="input-field block w-full px-12 py-3 rounded-lg text-white focus:outline-none" placeholder="Correo" required>
             </div>
             <div class="relative mb-4">
-                <input type="password" class="input-field block w-full px-12 py-3 rounded-lg text-white focus:outline-none" placeholder="Contraseña">
+                <input type="password" name="password" class="input-field block w-full px-12 py-3 rounded-lg text-white focus:outline-none" placeholder="Contraseña" required>
             </div>
             <div class="relative mb-6">
-                <input type="date" class="input-field block w-full px-12 py-3 rounded-lg text-white focus:outline-none" placeholder="Fecha de Nacimiento">
+                <input type="date" name="fecha_nacimiento" class="input-field block w-full px-12 py-3 rounded-lg text-white focus:outline-none" placeholder="Fecha de Nacimiento" required>
             </div>
-            <button class="create-btn block w-full py-3 rounded-lg text-white text-lg font-semibold hover:bg-pink-600 transition-colors duration-300">Registrarse</button>
+            <button type="submit" class="create-btn block w-full py-3 rounded-lg text-white text-lg font-semibold hover:bg-pink-600 transition-colors duration-300">Registrarse</button>
             <div class="mt-6">
                 <a href="{{ url_for('login') }}" class="create-btn block w-full py-3 rounded-lg text-white text-lg font-semibold hover:bg-pink-600 transition-colors duration-300">Volver al inicio de sesión</a>
             </div>

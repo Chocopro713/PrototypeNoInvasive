@@ -1,4 +1,5 @@
 from flask import Flask, render_template, redirect, request, url_for, jsonify, send_file
+import mysql.connector
 import json
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -9,6 +10,14 @@ import os
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads/'
+	
+def create_db_connection():
+    return mysql.connector.connect(
+        host='127.0.0.1',
+        database='PrototypeNoInvasive',
+        user='roo1',
+        password='PrototypeNoInvasive'
+    )
 
 @app.route('/data_relajado')
 def data_relajado():
@@ -131,8 +140,39 @@ def login():
     return render_template('login.html')
 
 # Ruta para la página de registro
-@app.route('/register')
+@app.route('/register', methods=['GET', 'POST'])
 def register():
+ 
+    if request.method == 'POST':
+        nombres = request.form['nombres']
+        apellidos = request.form['apellidos']
+        correo = request.form['correo']
+        password = request.form['password']
+        fecha_nacimiento = request.form['fecha_nacimiento']
+ 
+        try:
+            connection = create_db_connection()
+            if connection.is_connected():
+                cursor = connection.cursor()
+            
+                insert_query = """
+                    INSERT INTO `users` (`NOMBRE`, `APELLIDOS`, `CORREO`, `CONTRASENA`, `FECHA_NACIMIENTO`)
+                    VALUES (%s, %s, %s, %s, %s);
+                """
+                values = (nombres, apellidos, correo, password, fecha_nacimiento)
+                cursor.execute(insert_query, values)
+                connection.commit()
+ 
+                return redirect(url_for('dashboard'))
+ 
+        except mysql.connector.Error as e:
+            return f"Error al insertar los datos: {e}"
+ 
+        finally:
+            if connection.is_connected():
+                cursor.close()
+                connection.close()
+ 
     return render_template('register.html')
 
 @app.route('/dashboard')
