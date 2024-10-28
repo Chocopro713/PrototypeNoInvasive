@@ -38,10 +38,12 @@ def data_agitado():
     }
     return jsonify(data)
 
-# Ruta para los datos del Mind Monitor
 @app.route('/data_mind_monitor')
 def data_mind_monitor():
-    df = pd.read_excel("data/mindMonitor.xlsx")
+    # Cargar el archivo CSV
+    df = pd.read_csv('data/mindMonitor.csv')
+
+    # Enviar los datos de las ondas cerebrales (Delta_TP9, Theta_TP9, Beta_AF7)
     data = {
         'timestamp': df['TimeStamp'].tolist(),
         'delta_tp9': df['Delta_TP9'].tolist(),
@@ -49,7 +51,6 @@ def data_mind_monitor():
         'beta_af7': df['Beta_AF7'].tolist()
     }
     return jsonify(data)
-
 # Ruta para los datos comparativos Relajado vs Agitado
 @app.route('/data_comparativo')
 def data_comparativo():
