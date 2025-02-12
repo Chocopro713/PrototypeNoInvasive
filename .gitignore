@@ -1,0 +1,33 @@
+# Ignorar archivos de configuración sensibles
+.env
+config.py
+
+# Ignorar archivos de base de datos locales
+*.sqlite3
+__pycache__/
+*.pyc
+*.pyo
+*.log
+
+# Ignorar dependencias y entornos virtuales
+venv/
+env/
+*.egg-info/
+Pipfile
+Pipfile.lock
+
+# Ignorar archivos de caché
+*.cache
+__pycache__/
+*.pid
+
+# Ignorar archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Ignorar archivos subidos por los usuarios
+uploads/
+data/
+
+# Ignorar configuraciones de VS Code
+.vscode/

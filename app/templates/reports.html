@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+
+{% block title %}Reportes{% endblock %}
+
+{% block content %}
+<h1 class="my-4">Reportes</h1>
+<table class="table">
+    <thead>
+        <tr>
+            <th scope="col">Fecha</th>
+            <th scope="col">Estado Emocional</th>
+        </tr>
+    </thead>
+    <tbody id="report-table-body">
+    </tbody>
+</table>
+
+<script>
+    fetch('/report_data')
+    .then(response => response.json())
+    .then(data => {
+        const tableBody = document.getElementById('report-table-body');
+        data.forEach(report => {
+            const row = document.createElement('tr');
+            const dateCell = document.createElement('td');
+            dateCell.textContent = report.date;
+            const emotionCell = document.createElement('td');
+            emotionCell.textContent = report.emotion;
+            row.appendChild(dateCell);
+            row.appendChild(emotionCell);
+            tableBody.appendChild(row);
+        });
+    });
+</script>
+{% endblock %}

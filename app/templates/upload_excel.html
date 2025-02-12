@@ -6,7 +6,7 @@
 
 <div class="container mt-5">
     <h2>Subir archivo Excel</h2>
-    <form action="{{ url_for('upload_excel') }}" method="POST" enctype="multipart/form-data">
+    <form action="{{ url_for('upload.upload_excel') }}" method="POST" enctype="multipart/form-data">
         <div class="form-group">
             <label for="file">Seleccione archivo Excel</label>
             <input type="file" name="file" id="file" class="form-control">

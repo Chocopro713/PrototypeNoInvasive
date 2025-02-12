@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Prototipo no Invasivo{% endblock %}</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="d-flex" id="wrapper">
+        <!-- Sidebar -->
+        <div id="sidebar-wrapper">
+            <div class="sidebar-heading">Prototipo no Invasivo</div>
+            <div class="list-group list-group-flush">
+                <a href="{{ url_for('dashboard.dashboard') }}" class="list-group-item list-group-item-action bg-light">Dashboard</a>
+                <a href="{{ url_for('reports.reports') }}" class="list-group-item list-group-item-action bg-light">Reportes</a>
+                <a href="{{ url_for('upload.upload_excel') }}" class="list-group-item list-group-item-action bg-light">Subir Excel</a>
+                <a href="{{ url_for('auth.logout') }}" class="list-group-item list-group-item-action bg-light">Cerrar Sesión</a>
+            </div>
+        </div>
+        <!-- /#sidebar-wrapper -->
+
+        <!-- Page Content -->
+        <div id="page-content-wrapper">
+            <div class="container-fluid">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+        <!-- /#page-content-wrapper -->
+    </div>
+</body>
+</html>
