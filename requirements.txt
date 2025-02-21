@@ -4,3 +4,4 @@ pandas
 matplotlib
 python-dotenv
 gunicorn
+psycopg2
