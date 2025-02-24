@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, session, url_for, flash
 from app.database import create_db_connection
 from werkzeug.security import generate_password_hash, check_password_hash
-import mysql
+from psycopg2.extras import RealDictCursor
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -11,9 +11,11 @@ def login():
         correo = request.form['correo']
         password = request.form['password']
 
+        connection = None
+        cursor = None
         try:
             connection = create_db_connection()
-            cursor = connection.cursor(dictionary=True)
+            cursor = connection.cursor(cursor_factory=RealDictCursor)
 
             cursor.execute("SELECT * FROM users WHERE correo = %s", (correo,))
             user = cursor.fetchone()
@@ -22,18 +24,17 @@ def login():
                 # Guardar sesión
                 session['user_id'] = user['id']
                 session['user_name'] = user['nombres']
-                flash("Inicio de sesión exitoso.", "success")  # ✅ Agrega mensaje flash
-                return redirect(url_for('dashboard.dashboard'))  # Redirige al dashboard
+                flash("Inicio de sesión exitoso.", "success")
+                return redirect(url_for('dashboard.dashboard'))
             else:
-                flash("Correo o contraseña incorrectos.", "danger")  # ✅ Mensaje de error
+                flash("Correo o contraseña incorrectos.", "danger")
 
         except Exception as e:
-            flash(f"Error en el login: {e}", "danger")  # ✅ Muestra errores
-
+            flash(f"Error en el login: {e}", "danger")
         finally:
-            if cursor:
+            if cursor is not None:
                 cursor.close()
-            if connection.is_connected():
+            if connection is not None:
                 connection.close()
 
     return render_template('login.html')
@@ -49,6 +50,8 @@ def register():
 
         hashed_password = generate_password_hash(password)  # Hash de contraseña
 
+        connection = None
+        cursor = None
         try:
             connection = create_db_connection()
             cursor = connection.cursor()
@@ -64,12 +67,12 @@ def register():
             flash("Registro exitoso. Inicia sesión.", "success")
             return redirect(url_for('auth.login'))
 
-        except mysql.connector.Error as e:
+        except Exception as e:
             flash(f"Error al registrar: {e}", "danger")
         finally:
-            if cursor:
+            if cursor is not None:
                 cursor.close()
-            if connection.is_connected():
+            if connection is not None:
                 connection.close()
 
     return render_template('register.html')
