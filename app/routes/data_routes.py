@@ -1,24 +1,63 @@
-from flask import Blueprint, jsonify
-import pandas as pd
+from flask import Blueprint, jsonify, request
+import serial.tools.list_ports
+import serial
+import time
+import re
 
 data_bp = Blueprint('data', __name__)
 
-@data_bp.route('/data_relajado')
-def data_relajado():
-    df = pd.read_excel("data/Lectura_relajado.xlsx")
-    return jsonify({'segundos': df['Segundos'].tolist(), 'valor_gsr': df['Valor_GSR'].tolist()})
+@data_bp.route('/available_ports', methods=['GET'])
+def available_ports():
+    ports = [port.description for port in serial.tools.list_ports.comports()]
+    print(f"Puertos disponibles: {ports}")
+    return jsonify({"ports": ports})
 
-@data_bp.route('/data_agitado')
-def data_agitado():
-    df = pd.read_excel("data/Lectura_agitado.xlsx")
-    return jsonify({'segundos': df['Segundos'].tolist(), 'valor_gsr': df['Valor_GSR'].tolist()})
+def extract_port_from_description(description):
+    match = re.search(r'\((COM\d+)\)', description)
+    if match:
+        return match.group(1)
+    return None
 
-@data_bp.route('/data_mind_monitor')
-def data_mind_monitor():
-    df = pd.read_csv('data/mindMonitor.csv')
-    return jsonify({
-        'timestamp': df['TimeStamp'].tolist(),
-        'delta_tp9': df['Delta_TP9'].tolist(),
-        'theta_tp9': df['Theta_TP9'].tolist(),
-        'beta_af7': df['Beta_AF7'].tolist()
-    })
+def open_serial_port(port):
+    try:
+        ser = serial.Serial(port, 9600, timeout=5)
+        return ser
+    except serial.SerialException as e:
+        print(f"Error al abrir el puerto {port}: {e}")
+        return None
+
+@data_bp.route('/data_gsr', methods=['GET'])
+def get_gsr_data():
+    port_description = request.args.get('port')
+    if not port_description:
+        return jsonify({"error": "No se especificó el puerto"}), 400
+
+    port = extract_port_from_description(port_description)
+    if not port:
+        return jsonify({"error": "Descripción del puerto inválida"}), 400
+
+    try:
+        ser = open_serial_port(port)
+        if ser:
+            start_time = time.time()
+            readings = 0
+            while True:
+                if time.time() - start_time > 15:  # Limitar a 15 segundos
+                    return jsonify({"error": "Tiempo de lectura excedido"}), 408
+                if readings >= 15:  # Limitar a 15 lecturas
+                    return jsonify({"error": "Número de lecturas excedido"}), 200
+                if ser.in_waiting:
+                    gsr_value = ser.readline().decode('utf-8').strip()
+                    print(f"Valor GSR: {gsr_value}")
+                    readings += 1
+                    return jsonify({"gsr_value": gsr_value})
+                else:
+                    time.sleep(0.1)  # Esperar un poco antes de volver a verificar
+        else:
+            return jsonify({"error": "No se pudo abrir el puerto serie"})
+    except Exception as e:
+        print(f"Excepción: {e}")
+        return jsonify({"error": str(e)})
+    finally:
+        if ser:
+            ser.close()

@@ -7,7 +7,7 @@ from app.middleware import login_required
 dashboard_bp = Blueprint('dashboard', __name__)
 
 @dashboard_bp.route('/dashboard')
-@login_required
+# @login_required
 def dashboard():
     filename = request.args.get('filename')
 
