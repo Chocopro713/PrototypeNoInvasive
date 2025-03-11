@@ -41,18 +41,20 @@ def get_gsr_data():
         if ser:
             start_time = time.time()
             readings = 0
+            gsr_values = []
             while True:
                 if time.time() - start_time > 15:  # Limitar a 15 segundos
-                    return jsonify({"error": "Tiempo de lectura excedido"}), 408
+                    break
                 if readings >= 15:  # Limitar a 15 lecturas
-                    return jsonify({"error": "Número de lecturas excedido"}), 200
+                    break
                 if ser.in_waiting:
                     gsr_value = ser.readline().decode('utf-8').strip()
                     print(f"Valor GSR: {gsr_value}")
+                    gsr_values.append(int(gsr_value))
                     readings += 1
-                    return jsonify({"gsr_value": gsr_value})
                 else:
                     time.sleep(0.1)  # Esperar un poco antes de volver a verificar
+            return jsonify({"gsr_values": gsr_values})
         else:
             return jsonify({"error": "No se pudo abrir el puerto serie"})
     except Exception as e:

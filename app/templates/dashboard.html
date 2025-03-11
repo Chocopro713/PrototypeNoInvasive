@@ -6,7 +6,11 @@
 <h1 class="my-4">Dashboard - Sensor GSR</h1>
 
 <div class="container">
-    <canvas id="gsrChart"></canvas>
+    <div class="row">
+        <div class="col-md-12">
+            <canvas id="gsrChart"></canvas>
+        </div>
+    </div>
     <div class="mt-3">
         <label for="portSelect">Seleccionar Puerto:</label>
         <select id="portSelect" class="form-control">
@@ -15,11 +19,13 @@
     </div>
     <button id="toggleButton" class="btn btn-primary mt-3">Activar Sensor GSR</button>
     <div id="alertContainer" class="mt-3"></div> <!-- Contenedor para la alerta -->
+    <div id="emotionContainer" class="mt-3"></div> <!-- Contenedor para el estado de ánimo -->
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     const ctx = document.getElementById('gsrChart').getContext('2d');
+
     let gsrData = [];
     let timeLabels = [];
     let chart = new Chart(ctx, {
@@ -52,24 +58,27 @@
         fetch(`/data_gsr?port=${selectedPort}`)
             .then(response => response.json())
             .then(data => {
-                if (data.gsr_value) {
+                if (data.gsr_values) {
                     let timestamp = new Date().toLocaleTimeString();
-                    gsrData.push(parseInt(data.gsr_value));
-                    timeLabels.push(timestamp);
+                    data.gsr_values.forEach(value => {
+                        gsrData.push(value);
+                        timeLabels.push(timestamp);
+                    });
 
                     if (gsrData.length > 15) { // Mantener solo 15 puntos en la gráfica
-                        gsrData.shift();
-                        timeLabels.shift();
+                        gsrData.splice(0, gsrData.length - 15);
+                        timeLabels.splice(0, timeLabels.length - 15);
                     }
 
                     chart.update();
-                    readings += 1;
+                    readings += data.gsr_values.length;
 
                     if (readings >= 15 || (new Date().getTime() - startTime) > 15000) {
                         clearInterval(intervalId);
                         intervalId = null;
                         document.getElementById('toggleButton').textContent = 'Activar Sensor GSR';
                         showAlert("Lectura completada.");
+                        showEmotion();
                     }
                 } else if (data.error) {
                     showAlert(data.error);
@@ -95,6 +104,26 @@
                 <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
+            </div>
+        `;
+    }
+
+    function showEmotion() {
+        const emotionContainer = document.getElementById('emotionContainer');
+        const averageValue = gsrData.reduce((a, b) => a + b, 0) / gsrData.length;
+        let emotion = 'Desconocido';
+
+        if (averageValue < 100) {
+            emotion = 'Relajado';
+        } else if (averageValue < 200) {
+            emotion = 'Triste';
+        } else {
+            emotion = 'Enojado';
+        }
+
+        emotionContainer.innerHTML = `
+            <div class="alert alert-info" role="alert">
+                Estado de ánimo: ${emotion}
             </div>
         `;
     }
