@@ -82,3 +82,29 @@ def logout():
     session.clear()
     flash("Has cerrado sesión.", "info")
     return redirect(url_for('auth.login'))
+
+@auth_bp.route('/test_db_connection')
+def test_db_connection():
+    connection = None
+    cursor = None
+    try:
+        connection = create_db_connection()
+        cursor = connection.cursor()
+        cursor.execute("SET search_path TO public;")
+        cursor.execute("""
+            SELECT table_schema, table_name
+            FROM information_schema.tables
+            WHERE table_schema = 'public';
+        """)
+        tables = cursor.fetchall()
+        return str(tables)
+        # tables = cursor.fetchall()
+        # table_names = [table[0] for table in tables]
+        # return f"Conexión exitosa a la base de datos. Tablas: {', '.join(table_names)}"
+    except Exception as e:
+        return f"Error al conectar a la base de datos: {e}"
+    finally:
+        if cursor is not None:
+            cursor.close()
+        if connection is not None:
+            connection.close()

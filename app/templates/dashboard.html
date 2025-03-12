@@ -18,8 +18,8 @@
         </select>
     </div>
     <button id="toggleButton" class="btn btn-primary mt-3">Activar Sensor GSR</button>
-    <div id="alertContainer" class="mt-3"></div> <!-- Contenedor para la alerta -->
-    <div id="emotionContainer" class="mt-3"></div> <!-- Contenedor para el estado de ánimo -->
+    <div id="alertContainer" class="mt-3"></div>
+    <div id="emotionContainer" class="mt-3"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -28,6 +28,10 @@
 
     let gsrData = [];
     let timeLabels = [];
+    let intervalId = null;
+    let selectedPort = null;
+    let readings = 0;
+
     let chart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -49,51 +53,95 @@
         }
     });
 
-    let intervalId = null;
-    let selectedPort = null;
-    let startTime = null;
-    let readings = 0;
-
     function fetchGSRData() {
+        if (readings >= 10) {
+            stopReading();
+            const averageValue = calculateAverage(gsrData);
+            const emotion = determineEmotion(averageValue);
+            showEmotion(emotion);
+            showAlert("Lectura completada.");
+            saveDataToBackend(averageValue, emotion);
+            return;
+        }
+
         fetch(`/data_gsr?port=${selectedPort}`)
             .then(response => response.json())
             .then(data => {
-                if (data.gsr_values) {
-                    let timestamp = new Date().toLocaleTimeString();
-                    data.gsr_values.forEach(value => {
-                        gsrData.push(value);
-                        timeLabels.push(timestamp);
-                    });
+                if (data.gsr_values && data.gsr_values.length > 0) {
+                    const value = data.gsr_values[0];
+                    const timestamp = new Date().toLocaleTimeString();
 
-                    if (gsrData.length > 15) { // Mantener solo 15 puntos en la gráfica
+                    gsrData.push(value);
+                    timeLabels.push(timestamp);
+
+                    if (gsrData.length > 15) {
                         gsrData.splice(0, gsrData.length - 15);
                         timeLabels.splice(0, timeLabels.length - 15);
                     }
 
                     chart.update();
-                    readings += data.gsr_values.length;
+                    readings++;
+                    console.log(`Lectura ${readings}: ${value}`);
 
-                    if (readings >= 15 || (new Date().getTime() - startTime) > 15000) {
-                        clearInterval(intervalId);
-                        intervalId = null;
-                        document.getElementById('toggleButton').textContent = 'Activar Sensor GSR';
-                        showAlert("Lectura completada.");
-                        showEmotion();
-                    }
                 } else if (data.error) {
                     showAlert(data.error);
-                    clearInterval(intervalId);
-                    intervalId = null;
-                    document.getElementById('toggleButton').textContent = 'Activar Sensor GSR';
+                    stopReading();
                 }
             })
             .catch(error => {
-                console.log("Error al obtener datos:", error);
+                console.error("Error al obtener datos:", error);
                 showAlert("Error al obtener datos del sensor GSR.");
-                clearInterval(intervalId);
-                intervalId = null;
-                document.getElementById('toggleButton').textContent = 'Activar Sensor GSR';
+                stopReading();
             });
+    }
+
+    function startReading() {
+        selectedPort = document.getElementById('portSelect').value;
+        if (!selectedPort) {
+            showAlert("Por favor, selecciona un puerto.");
+            return;
+        }
+
+        readings = 0;
+        gsrData = [];
+        timeLabels = [];
+        chart.data.labels = timeLabels;
+        chart.data.datasets[0].data = gsrData;
+        chart.update();
+
+        intervalId = setInterval(fetchGSRData, 1000);
+        document.getElementById('toggleButton').textContent = 'Desactivar Sensor GSR';
+        console.log("Sensor activado.");
+    }
+
+    function stopReading() {
+        if (intervalId !== null) {
+            clearInterval(intervalId);
+            intervalId = null;
+            console.log("Sensor detenido.");
+        }
+        document.getElementById('toggleButton').textContent = 'Activar Sensor GSR';
+        readings = 0;
+    }
+
+    function calculateAverage(dataArray) {
+        const sum = dataArray.reduce((a, b) => a + b, 0);
+        return parseFloat((sum / dataArray.length).toFixed(2));
+    }
+
+    function determineEmotion(averageValue) {
+        if (averageValue < 100) return 'Relajado';
+        if (averageValue < 200) return 'Triste';
+        return 'Enojado';
+    }
+
+    function showEmotion(emotion) {
+        const emotionContainer = document.getElementById('emotionContainer');
+        emotionContainer.innerHTML = `
+            <div class="alert alert-info" role="alert">
+                Estado de ánimo: <strong>${emotion}</strong>
+            </div>
+        `;
     }
 
     function showAlert(message) {
@@ -108,51 +156,31 @@
         `;
     }
 
-    function showEmotion() {
-        const emotionContainer = document.getElementById('emotionContainer');
-        const averageValue = gsrData.reduce((a, b) => a + b, 0) / gsrData.length;
-        let emotion = 'Desconocido';
-
-        if (averageValue < 100) {
-            emotion = 'Relajado';
-        } else if (averageValue < 200) {
-            emotion = 'Triste';
-        } else {
-            emotion = 'Enojado';
-        }
-
-        emotionContainer.innerHTML = `
-            <div class="alert alert-info" role="alert">
-                Estado de ánimo: ${emotion}
-            </div>
-        `;
+    function saveDataToBackend(averageValue, emotion) {
+        fetch('/save_gsr_data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ gsr_average: averageValue, emotion: emotion })
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.status === 'success') console.log("Datos guardados correctamente.");
+            else console.error("Error al guardar datos:", result.message);
+        })
+        .catch(error => console.error("Error:", error));
     }
 
-    document.getElementById('toggleButton').addEventListener('click', function() {
-        if (intervalId) {
-            clearInterval(intervalId);
-            intervalId = null;
-            this.textContent = 'Activar Sensor GSR';
-        } else {
-            selectedPort = document.getElementById('portSelect').value;
-            if (selectedPort) {
-                startTime = new Date().getTime();
-                readings = 0;
-                intervalId = setInterval(fetchGSRData, 500);  // Obtener datos cada 500ms
-                this.textContent = 'Desactivar Sensor GSR';
-            } else {
-                showAlert("Por favor, selecciona un puerto.");
-            }
-        }
+    document.getElementById('toggleButton').addEventListener('click', function () {
+        if (intervalId) stopReading();
+        else startReading();
     });
 
-    // Función para obtener los puertos disponibles
-    function fetchAvailablePorts() {
+    document.addEventListener('DOMContentLoaded', () => {
         fetch('/available_ports')
             .then(response => response.json())
             .then(data => {
                 const portSelect = document.getElementById('portSelect');
-                portSelect.innerHTML = ''; // Limpiar opciones anteriores
+                portSelect.innerHTML = '';
                 data.ports.forEach(port => {
                     const option = document.createElement('option');
                     option.value = port;
@@ -160,13 +188,7 @@
                     portSelect.appendChild(option);
                 });
             })
-            .catch(error => {
-                console.log("Error al obtener puertos:", error);
-                showAlert("Error al obtener puertos disponibles.");
-            });
-    }
-
-    // Obtener puertos disponibles al cargar la página
-    document.addEventListener('DOMContentLoaded', fetchAvailablePorts);
+            .catch(error => showAlert("Error al obtener puertos: " + error));
+    });
 </script>
 {% endblock %}
