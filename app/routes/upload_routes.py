@@ -41,7 +41,8 @@ def upload_excel():
             VALUES (%s, %s, %s, %s, %s)
             """
             # Aquí debes proporcionar los valores para user_id, emotion y session_id
-            user_id = 2  # Ejemplo de user_id, debes obtenerlo de tu contexto
+            user_id = session.get('user_id')  # Obtener el user_id desde la sesión
+            # user_id = 2  # Obtener el user_id desde la sesión
             session_id = str(datetime.now().timestamp())  # ID único de la sesión
             created_at = datetime.now()
 

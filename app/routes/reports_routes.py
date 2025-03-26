@@ -14,8 +14,8 @@ def report_data():
     connection = None
     cursor = None
 
-    # user_id = session.get('user_id')  # Opcional: Si quieres filtrar por usuario logueado
-    user_id = 2  # Opcional: Si quieres filtrar por usuario logueado
+    user_id = session.get('user_id')  # Opcional: Si quieres filtrar por usuario logueado
+    # user_id = 2  # Opcional: Si quieres filtrar por usuario logueado
 
     try:
         connection = create_db_connection()

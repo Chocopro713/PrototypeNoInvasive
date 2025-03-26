@@ -24,6 +24,7 @@ def login():
                 # Guardar sesión
                 session['user_id'] = user['id']
                 session['user_name'] = user['nombres']
+                session['user_lastname'] = user['apellidos']
                 flash("Inicio de sesión exitoso.", "success")
                 return redirect(url_for('dashboard.dashboard'))
             else:

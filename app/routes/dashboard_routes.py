@@ -9,9 +9,12 @@ from app.middleware import login_required
 dashboard_bp = Blueprint('dashboard', __name__)
 
 @dashboard_bp.route('/dashboard')
-# @login_required
+@login_required
 def dashboard():
     filename = request.args.get('filename')
+    
+    user_name = session.get('user_name')
+    user_lastname = session.get('user_lastname')
 
     if filename:
         file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
@@ -22,9 +25,9 @@ def dashboard():
             'valor_gsr': df['Valor_GSR'].tolist()
         }
 
-        return render_template('dashboard.html', user_name=session.get('user_name'), data=data, filename=filename)
+        return render_template('dashboard.html', user_name=user_name, user_lastname=user_lastname, data=data, filename=filename)
 
-    return render_template('dashboard.html', user_name=session.get('user_name'))
+    return render_template('dashboard.html', user_name=user_name, user_lastname=user_lastname)
 
 @dashboard_bp.route('/save_gsr_data', methods=['POST'])
 def save_gsr_data():
@@ -32,8 +35,8 @@ def save_gsr_data():
     gsr_average = data.get('gsr_average')  # Promedio de las 10 lecturas
     emotion = data.get('emotion')  # Estado emocional
 
-    # user_id = session.get('user_id')  # Obtener el user_id desde la sesión
-    user_id = 2  # Obtener el user_id desde la sesión
+    user_id = session.get('user_id')  # Obtener el user_id desde la sesión
+    # user_id = 2  # Obtener el user_id desde la sesión
 
     if gsr_average is None or not emotion:
         return jsonify({'status': 'error', 'message': 'Datos incompletos.'}), 400
