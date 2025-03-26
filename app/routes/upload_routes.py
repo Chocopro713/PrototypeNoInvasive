@@ -1,36 +1,56 @@
-from flask import Blueprint, request, jsonify, redirect, url_for, current_app
-import os
+from flask import Blueprint, request, session, render_template, jsonify, redirect, url_for, current_app
 import pandas as pd
+from datetime import datetime
 from app.database import create_db_connection
 import psycopg2  # Necesario para psycopg2.Binary
 
 upload_bp = Blueprint('upload', __name__)
 
+@upload_bp.route('/upload_excel', methods=['GET'])
+def upload_excel_form():
+    return render_template('upload_excel.html')
+
 @upload_bp.route('/upload_excel', methods=['POST'])
 def upload_excel():
     file = request.files['file']
     if file and file.filename.endswith('.xlsx'):
-        file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], file.filename)
-        file.save(file_path)
+        # Leer el archivo directamente desde la solicitud
+        df = pd.read_excel(file)
 
-        # Procesar el archivo con pandas (si es necesario)
-        df = pd.read_excel(file_path)
+        # Calcular el promedio de la columna 'gsr'
+        promedio_gsr = df['gsr'].mean()
 
-        # Leer el contenido binario del archivo guardado
-        with open(file_path, "rb") as f:
-            file_data = f.read()
+        # Determinar la emoción basada en el promedio_gsr
+        def determine_emotion(average_value):
+            if average_value < 100:
+                return 'Relajado'
+            elif average_value < 200:
+                return 'Triste'
+            else:
+                return 'Enojado'
+
+        emotion = determine_emotion(promedio_gsr)
 
         try:
             connection = create_db_connection()
             cursor = connection.cursor()
 
-            insert_query = "INSERT INTO excel_files (file_name, file_data) VALUES (%s, %s)"
-            cursor.execute(insert_query, (file.filename, psycopg2.Binary(file_data)))
+            # Insertar los datos en la tabla existente
+            insert_query = """
+            INSERT INTO gsr_readings (user_id, value, emotion, created_at, session_id)
+            VALUES (%s, %s, %s, %s, %s)
+            """
+            # Aquí debes proporcionar los valores para user_id, emotion y session_id
+            user_id = 2  # Ejemplo de user_id, debes obtenerlo de tu contexto
+            session_id = str(datetime.now().timestamp())  # ID único de la sesión
+            created_at = datetime.now()
+
+            cursor.execute(insert_query, (user_id, float(promedio_gsr), emotion, created_at, session_id))
             connection.commit()
 
-            return redirect(url_for('dashboard'))
+            return render_template('reports.html')
         except Exception as e:
-            return jsonify({'error': str(e)})
+            return jsonify({'error': str(e)}), 500
         finally:
             if cursor:
                 cursor.close()

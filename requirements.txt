@@ -6,3 +6,4 @@ python-dotenv
 gunicorn
 pyserial
 psycopg2
+openpyxl

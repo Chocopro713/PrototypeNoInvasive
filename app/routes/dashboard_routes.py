@@ -43,8 +43,8 @@ def save_gsr_data():
 
     connection = None
     cursor = None
-    session_id = str(datetime.utcnow().timestamp())  # ID único de la sesión
-    created_at = datetime.utcnow()
+    session_id = str(datetime.now().timestamp())  # ID único de la sesión
+    created_at = datetime.now()
 
     try:
         connection = create_db_connection()
