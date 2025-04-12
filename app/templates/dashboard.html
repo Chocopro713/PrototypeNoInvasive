@@ -6,6 +6,7 @@
 
 <h1>Bienvenido {{ user_name }} {{ user_lastname }}</h1>
 <h2 class="my-4">Dashboard - Sensor GSR</h2>
+<button id="connectButton" class="btn btn-primary mt-3">Conectar al puerto serie</button>
 
 <div class="container">
     <div class="row">
@@ -55,6 +56,60 @@
         }
     });
 
+    // function updatePortList() {
+    //     fetch('/available_ports')
+    //         .then(response => response.json())
+    //         .then(data => {
+    //             const portSelect = document.getElementById('portSelect');
+    //             const currentPorts = Array.from(portSelect.options).map(option => option.value);
+
+    //             // Agregar nuevos puertos al selector
+    //             data.ports.forEach(port => {
+    //                 if (!currentPorts.includes(port.device)) {
+    //                     const option = document.createElement('option');
+    //                     option.value = port.device; // Usar el nombre del dispositivo (e.g., COM3)
+    //                     option.textContent = `${port.description} (${port.device})`; // Mostrar descripción y nombre
+    //                     portSelect.appendChild(option);
+    //                 }
+    //             });
+
+    //             // Eliminar puertos desconectados
+    //             Array.from(portSelect.options).forEach(option => {
+    //                 if (!data.ports.some(port => port.device === option.value)) {
+    //                     option.remove();
+    //                 }
+    //             });
+    //         })
+    //         .catch(error => console.error("Error al actualizar la lista de puertos:", error));
+    // }
+
+    function updatePortList() {
+        fetch('/available_ports')
+            .then(response => response.json())
+            .then(data => {
+                const portSelect = document.getElementById('portSelect');
+                const currentPorts = Array.from(portSelect.options).map(option => option.value);
+
+                // Agregar nuevos puertos al selector
+                data.ports.forEach(port => {
+                    if (!currentPorts.includes(port.device)) {
+                        const option = document.createElement('option');
+                        option.value = port.device; // Usar el nombre del dispositivo (e.g., COM3)
+                        option.textContent = `${port.description} (${port.device})`; // Mostrar descripción y nombre
+                        portSelect.appendChild(option);
+                    }
+                });
+
+                // Eliminar puertos desconectados, excepto el puerto conectado
+                Array.from(portSelect.options).forEach(option => {
+                    if (!data.ports.some(port => port.device === option.value) && option.value !== selectedPort) {
+                        option.remove();
+                    }
+                });
+            })
+            .catch(error => console.error("Error al actualizar la lista de puertos:", error));
+    }
+
     function fetchGSRData() {
         if (readings >= 10) {
             stopReading();
@@ -84,7 +139,6 @@
                     chart.update();
                     readings++;
                     console.log(`Lectura ${readings}: ${value}`);
-
                 } else if (data.error) {
                     showAlert(data.error);
                     stopReading();
@@ -178,19 +232,130 @@
     });
 
     document.addEventListener('DOMContentLoaded', () => {
-        fetch('/available_ports')
-            .then(response => response.json())
-            .then(data => {
-                const portSelect = document.getElementById('portSelect');
-                portSelect.innerHTML = '';
-                data.ports.forEach(port => {
-                    const option = document.createElement('option');
-                    option.value = port;
-                    option.textContent = port;
-                    portSelect.appendChild(option);
-                });
-            })
-            .catch(error => showAlert("Error al obtener puertos: " + error));
+        updatePortList();
+        setInterval(updatePortList, 5000); // Actualizar la lista de puertos cada 5 segundos
     });
+
+    let port = null;
+    let reader = null;
+    document.getElementById('connectButton').addEventListener('click', async () => {
+        try {
+            if ('serial' in navigator) {
+                console.log('WebSerial API soportada.');
+            } else {
+                console.error('WebSerial API no soportada en este navegador.');
+                showAlert('Tu navegador no soporta la WebSerial API. Usa Chrome o Edge.');
+                return;
+            }
+
+            // Solicitar al usuario que seleccione un puerto
+            const port = await navigator.serial.requestPort();
+            await port.open({ baudRate: 9600 });
+            console.log('Puerto conectado:', port);
+
+            // Obtener información del puerto conectado
+            const portInfo = port.getInfo();
+            console.log('Información del puerto conectado:', portInfo);
+
+            // Mostrar información detallada
+            const usbVendorId = portInfo.usbVendorId || 'Desconocido';
+            const usbProductId = portInfo.usbProductId || 'Desconocido';
+            console.log(`Vendor ID: ${usbVendorId}`);
+            console.log(`Product ID: ${usbProductId}`);
+
+            fetch('/get_port_name', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ usbVendorId, usbProductId })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.port_name) {
+                        console.log(`Nombre del puerto: ${data.port_name}`);
+                        const portName = data.port_name;
+
+                        // Agregar el puerto al selector si no existe
+                        const portSelect = document.getElementById('portSelect');
+                        let option = Array.from(portSelect.options).find(opt => opt.value === portName);
+                        if (!option) {
+                            option = document.createElement('option');
+                            option.value = portName;
+                            option.textContent = portName;
+                            portSelect.appendChild(option);
+                        }
+
+                        // Seleccionar automáticamente el puerto conectado
+                        portSelect.value = portName;
+                        selectedPort = portName;
+
+                        showAlert('Puerto conectado correctamente.');
+                    } else {
+                        console.error('No se encontró el nombre del puerto.');
+                        showAlert('No se encontró el nombre del puerto.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al obtener el nombre del puerto:', error);
+                    showAlert('Error al obtener el nombre del puerto: ' + error.message);
+                });
+
+            // Agregar el puerto al selector si no existe
+            const portName = `Puerto conectado (Vendor: ${usbVendorId}, Product: ${usbProductId})`;
+            const portSelect = document.getElementById('portSelect');
+            let option = Array.from(portSelect.options).find(opt => opt.value === portName);
+            if (!option) {
+                option = document.createElement('option');
+                option.value = portName;
+                option.textContent = portName;
+                portSelect.appendChild(option);
+            }
+
+            // Seleccionar automáticamente el puerto conectado
+            // portSelect.value = portName;
+
+            // reader = port.readable.getReader();
+
+            // Seleccionar automáticamente el puerto conectado
+            portSelect.value = portName;
+            selectedPort = portName;
+
+            showAlert('Puerto conectado correctamente.');
+        } catch (error) {
+            console.error('Error al conectar al puerto:', error);
+            showAlert('Error al conectar al puerto: ' + error.message);
+        }
+    });
+
+    async function readSerialData() {
+        try {
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) {
+                    console.log('Lectura terminada.');
+                    reader.releaseLock();
+                    break;
+                }
+
+                const gsrValue = parseFloat(new TextDecoder().decode(value).trim());
+                if (!isNaN(gsrValue)) {
+                    const timestamp = new Date().toLocaleTimeString();
+
+                    gsrData.push(gsrValue);
+                    timeLabels.push(timestamp);
+
+                    if (gsrData.length > 15) {
+                        gsrData.splice(0, gsrData.length - 15);
+                        timeLabels.splice(0, timeLabels.length - 15);
+                    }
+
+                    chart.update();
+                    console.log(`Valor GSR: ${gsrValue}`);
+                }
+            }
+        } catch (error) {
+            console.error('Error al leer datos del puerto:', error);
+            showAlert('Error al leer datos del puerto: ' + error.message);
+        }
+    }
 </script>
 {% endblock %}
