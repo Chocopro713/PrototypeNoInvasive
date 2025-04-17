@@ -263,6 +263,42 @@
             console.log(`Vendor ID: ${usbVendorId}`);
             console.log(`Product ID: ${usbProductId}`);
 
+            // fetch('/get_port_name', {
+            //     method: 'POST',
+            //     headers: { 'Content-Type': 'application/json' },
+            //     body: JSON.stringify({ usbVendorId, usbProductId })
+            // })
+            //     .then(response => response.json())
+            //     .then(data => {
+            //         if (data.port_name) {
+            //             console.log(`Nombre del puerto: ${data.port_name}`);
+            //             const portName = data.port_name;
+
+            //             // Agregar el puerto al selector si no existe
+            //             const portSelect = document.getElementById('portSelect');
+            //             let option = Array.from(portSelect.options).find(opt => opt.value === portName);
+            //             if (!option) {
+            //                 option = document.createElement('option');
+            //                 option.value = portName;
+            //                 option.textContent = portName;
+            //                 portSelect.appendChild(option);
+            //             }
+
+            //             // Seleccionar automáticamente el puerto conectado
+            //             portSelect.value = portName;
+            //             selectedPort = portName;
+
+            //             showAlert('Puerto conectado correctamente.');
+            //         } else {
+            //             console.error('No se encontró el nombre del puerto.');
+            //             showAlert('No se encontró el nombre del puerto.');
+            //         }
+            //     })
+            //     .catch(error => {
+            //         console.error('Error al obtener el nombre del puerto:', error);
+            //         showAlert('Error al obtener el nombre del puerto: ' + error.message);
+            //     });
+
             fetch('/get_port_name', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -289,6 +325,19 @@
                         selectedPort = portName;
 
                         showAlert('Puerto conectado correctamente.');
+                    } else if (data.available_ports) {
+                        console.error('No se encontró el puerto específico. Puertos disponibles:', data.available_ports);
+                        showAlert(`No se encontró el puerto específico. Selecciona uno de los disponibles: ${data.available_ports.join(', ')}`);
+
+                        // Actualizar el selector con los puertos disponibles
+                        const portSelect = document.getElementById('portSelect');
+                        portSelect.innerHTML = ''; // Limpiar las opciones actuales
+                        data.available_ports.forEach(port => {
+                            const option = document.createElement('option');
+                            option.value = port;
+                            option.textContent = port;
+                            portSelect.appendChild(option);
+                        });
                     } else {
                         console.error('No se encontró el nombre del puerto.');
                         showAlert('No se encontró el nombre del puerto.');

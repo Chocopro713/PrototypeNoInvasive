@@ -89,14 +89,35 @@ def get_gsr_data():
         if ser:
             ser.close()
 
+# @data_bp.route('/get_port_name', methods=['POST'])
+# def get_port_name():
+#     data = request.json
+#     usb_vendor_id = data.get('usbVendorId')
+#     usb_product_id = data.get('usbProductId')
+
+#     for port in serial.tools.list_ports.comports():
+#         if port.vid == usb_vendor_id and port.pid == usb_product_id:
+#             return jsonify({"port_name": port.device})
+
+#     return jsonify({"error": "No se encontró el puerto correspondiente"}), 404
+
 @data_bp.route('/get_port_name', methods=['POST'])
 def get_port_name():
     data = request.json
     usb_vendor_id = data.get('usbVendorId')
     usb_product_id = data.get('usbProductId')
 
+    print(f"Buscando puerto con Vendor ID: {usb_vendor_id}, Product ID: {usb_product_id}")
+
+    # Buscar el puerto que coincida con el usbVendorId y usbProductId
     for port in serial.tools.list_ports.comports():
+        print(f"Revisando puerto: {port.device}, VID: {port.vid}, PID: {port.pid}")
         if port.vid == usb_vendor_id and port.pid == usb_product_id:
             return jsonify({"port_name": port.device})
 
-    return jsonify({"error": "No se encontró el puerto correspondiente"}), 404
+    # Si no se encuentra una coincidencia, devolver todos los puertos disponibles
+    ports = [port.device for port in serial.tools.list_ports.comports()]
+    if ports:
+        return jsonify({"error": "No se encontró el puerto específico, pero estos están disponibles.", "available_ports": ports}), 404
+
+    return jsonify({"error": "No se encontraron puertos disponibles"}), 404
