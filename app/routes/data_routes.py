@@ -6,12 +6,6 @@ import re
 
 data_bp = Blueprint('data', __name__)
 
-# @data_bp.route('/available_ports', methods=['GET'])
-# def available_ports():
-#     ports = [port.description for port in serial.tools.list_ports.comports()]
-#     print(f"Puertos disponibles: {ports}")
-#     return jsonify({"ports": ports})
-
 @data_bp.route('/available_ports', methods=['GET'])
 def available_ports():
     ports = [port.description for port in serial.tools.list_ports.comports()]
@@ -34,14 +28,6 @@ def extract_port_from_description(description):
     
     # Si no se encuentra un puerto válido, devolver None
     return None
-
-# def open_serial_port(port):
-#     try:
-#         ser = serial.Serial(port, 9600, timeout=5)
-#         return ser
-#     except serial.SerialException as e:
-#         print(f"Error al abrir el puerto {port}: {e}")
-#         return None
     
 def open_serial_port(port):
     try:
@@ -51,6 +37,9 @@ def open_serial_port(port):
         return ser
     except serial.SerialException as e:
         print(f"Error al abrir el puerto {port}: {e}")
+        return None
+    except Exception as e:
+        print(f"Error inesperado al abrir el puerto {port}: {e}")
         return None
 
 @data_bp.route('/data_gsr', methods=['GET'])
@@ -81,25 +70,15 @@ def get_gsr_data():
                     time.sleep(0.1)  # Esperar un poco antes de volver a verificar
             return jsonify({"gsr_values": gsr_values})
         else:
-            return jsonify({"error": "No se pudo abrir el puerto serie"})
+            # return jsonify({"error": "No se pudo abrir el puerto serie"})        
+            print(f"No se pudo abrir el puerto {port}.")
+            return jsonify({"error": f"No se pudo abrir el puerto {port}"}), 500
     except Exception as e:
-        print(f"Excepción: {e}")
+        print(f"Excepción al abrir el puerto {port}: {e}")
         return jsonify({"error": str(e)})
     finally:
         if ser:
             ser.close()
-
-# @data_bp.route('/get_port_name', methods=['POST'])
-# def get_port_name():
-#     data = request.json
-#     usb_vendor_id = data.get('usbVendorId')
-#     usb_product_id = data.get('usbProductId')
-
-#     for port in serial.tools.list_ports.comports():
-#         if port.vid == usb_vendor_id and port.pid == usb_product_id:
-#             return jsonify({"port_name": port.device})
-
-#     return jsonify({"error": "No se encontró el puerto correspondiente"}), 404
 
 @data_bp.route('/get_port_name', methods=['POST'])
 def get_port_name():

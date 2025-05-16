@@ -56,33 +56,6 @@
         }
     });
 
-    // function updatePortList() {
-    //     fetch('/available_ports')
-    //         .then(response => response.json())
-    //         .then(data => {
-    //             const portSelect = document.getElementById('portSelect');
-    //             const currentPorts = Array.from(portSelect.options).map(option => option.value);
-
-    //             // Agregar nuevos puertos al selector
-    //             data.ports.forEach(port => {
-    //                 if (!currentPorts.includes(port.device)) {
-    //                     const option = document.createElement('option');
-    //                     option.value = port.device; // Usar el nombre del dispositivo (e.g., COM3)
-    //                     option.textContent = `${port.description} (${port.device})`; // Mostrar descripción y nombre
-    //                     portSelect.appendChild(option);
-    //                 }
-    //             });
-
-    //             // Eliminar puertos desconectados
-    //             Array.from(portSelect.options).forEach(option => {
-    //                 if (!data.ports.some(port => port.device === option.value)) {
-    //                     option.remove();
-    //                 }
-    //             });
-    //         })
-    //         .catch(error => console.error("Error al actualizar la lista de puertos:", error));
-    // }
-
     function updatePortList() {
         fetch('/available_ports')
             .then(response => response.json())
