@@ -63,3 +63,38 @@ def get_gsr_data():
     finally:
         if ser:
             ser.close()
+
+# @data_bp.route('/receive_gsr_data', methods=['POST'])
+# def receive_gsr_data():
+#     data = request.json
+#     gsr_value = data.get('gsr_value')
+#     if gsr_value is None:
+#         return jsonify({'status': 'error', 'message': 'No se recibió valor GSR'}), 400
+
+#     # Aquí puedes guardar el valor en la base de datos, en memoria, o como necesites
+#     # Por ejemplo, podrías guardar en una variable global o en Redis para mostrar en el dashboard
+
+#     print(f"Valor GSR recibido: {gsr_value}")
+#     # TODO: Guardar o procesar el dato como necesites
+
+#     return jsonify({'status': 'success', 'message': 'Dato recibido correctamente'})
+
+latest_gsr_values = []
+
+@data_bp.route('/receive_gsr_data', methods=['POST'])
+def receive_gsr_data():
+    data = request.json
+    gsr_value = data.get('gsr_value')
+    if gsr_value is None:
+        return jsonify({'status': 'error', 'message': 'No se recibió valor GSR'}), 400
+
+    latest_gsr_values.append(gsr_value)
+    if len(latest_gsr_values) > 15:
+        latest_gsr_values.pop(0)
+
+    print(f"Valor GSR recibido: {gsr_value}")
+    return jsonify({'status': 'success', 'message': 'Dato recibido correctamente'})
+
+@data_bp.route('/latest_gsr', methods=['GET'])
+def latest_gsr():
+    return jsonify({'gsr_values': latest_gsr_values})
