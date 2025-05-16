@@ -5,7 +5,9 @@ import requests
 
 SERIAL_PORT = 'COM5'  # Cambia esto según el puerto de tu Arduino
 BAUDRATE = 9600
+
 RENDER_API_URL = 'https://prototypenoinvasive.onrender.com/receive_gsr_data'  # Cambia esto por tu dominio real
+# RENDER_API_URL = 'http://localhost:5000/receive_gsr_data'  # Cambia esto por tu dominio real
 
 def read_gsr():
     try:

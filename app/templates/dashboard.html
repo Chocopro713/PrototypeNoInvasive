@@ -10,187 +10,121 @@
 <div class="container">
     <div class="row">
         <div class="col-md-12">
-            <canvas id="gsrChart"></canvas>
+            <canvas id="gsrChart" width="600" height="200"></canvas>
         </div>
     </div>
     <div class="mt-3">
-        <label for="portSelect">Seleccionar Puerto:</label>
-        <select id="portSelect" class="form-control">
-            <!-- Opciones de puertos serán añadidas dinámicamente -->
-        </select>
+        <!-- Botón para conectar el Arduino vía Web Serial API -->
+        <button id="connectSerialWeb" class="btn btn-success mt-3">Conectar Arduino (Web Serial)</button>
+        <div id="serialWebStatus" class="mt-2"></div>
     </div>
-    <button id="toggleButton" class="btn btn-primary mt-3">Activar Sensor GSR</button>
-    <div id="alertContainer" class="mt-3"></div>
-    <div id="emotionContainer" class="mt-3"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+let serialPort;
+let serialReader;
+let serialActive = false;
+let gsrData = [];
+let timeLabels = [];
+let chart = null;
+
+// Inicializa el gráfico
+function initChart() {
     const ctx = document.getElementById('gsrChart').getContext('2d');
-
-    let gsrData = [];
-    let timeLabels = [];
-    let intervalId = null;
-    let selectedPort = null;
-    let readings = 0;
-
-    let chart = new Chart(ctx, {
+    chart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: timeLabels,
             datasets: [{
-                label: 'GSR Sensor',
+                label: 'Valor GSR',
                 data: gsrData,
-                borderColor: 'blue',
-                borderWidth: 2,
-                fill: false
+                borderColor: 'rgba(75, 192, 192, 1)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                fill: true,
+                tension: 0.1
             }]
         },
         options: {
-            responsive: true,
             scales: {
-                x: { title: { display: true, text: 'Tiempo (s)' } },
-                y: { title: { display: true, text: 'Valor GSR' }, beginAtZero: true }
+                x: { title: { display: true, text: 'Tiempo' } },
+                y: { title: { display: true, text: 'GSR' } }
             }
         }
     });
+}
 
-    function fetchGSRData() {
-        if (readings >= 10) {
-            stopReading();
-            const averageValue = calculateAverage(gsrData);
-            const emotion = determineEmotion(averageValue);
-            showEmotion(emotion);
-            showAlert("Lectura completada.");
-            saveDataToBackend(averageValue, emotion);
-            return;
-        }
+// Actualiza el gráfico con nuevos datos
+function updateChart(newValue) {
+    const now = new Date();
+    const label = now.toLocaleTimeString();
+    gsrData.push(newValue);
+    timeLabels.push(label);
+    if (gsrData.length > 20) {
+        gsrData.shift();
+        timeLabels.shift();
+    }
+    chart.update();
+}
 
-        fetch(`/data_gsr?port=${selectedPort}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.gsr_values && data.gsr_values.length > 0) {
-                    const value = data.gsr_values[0];
-                    const timestamp = new Date().toLocaleTimeString();
+// Botón para conectar/desconectar el Arduino
+document.getElementById('connectSerialWeb').addEventListener('click', async () => {
+    if (serialActive) {
+        serialActive = false;
+        document.getElementById('serialWebStatus').innerText = "Desconectado.";
+        if (serialReader) serialReader.cancel();
+        if (serialPort) await serialPort.close();
+        return;
+    }
+    try {
+        serialPort = await navigator.serial.requestPort();
+        await serialPort.open({ baudRate: 9600 });
+        document.getElementById('serialWebStatus').innerText = "¡Conectado! Leyendo datos...";
+        serialActive = true;
+        listenSerial();
+    } catch (err) {
+        document.getElementById('serialWebStatus').innerText = "Error: " + err;
+    }
+});
 
-                    gsrData.push(value);
-                    timeLabels.push(timestamp);
+// Lee datos del Arduino y los envía al backend
+async function listenSerial() {
+    const decoder = new TextDecoderStream();
+    const inputDone = serialPort.readable.pipeTo(decoder.writable);
+    serialReader = decoder.readable.getReader();
 
-                    if (gsrData.length > 15) {
-                        gsrData.splice(0, gsrData.length - 15);
-                        timeLabels.splice(0, timeLabels.length - 15);
-                    }
-
-                    chart.update();
-                    readings++;
-                    console.log(`Lectura ${readings}: ${value}`);
-
-                } else if (data.error) {
-                    showAlert(data.error);
-                    stopReading();
+    while (serialActive) {
+        try {
+            const { value, done } = await serialReader.read();
+            if (done) break;
+            if (value) {
+                const gsrValue = value.trim();
+                if (gsrValue && !isNaN(gsrValue)) {
+                    // Envía el dato al backend Flask
+                    fetch('/receive_gsr_data', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ gsr_value: parseInt(gsrValue) })
+                    }).then(res => res.json())
+                      .then(data => {
+                          // Actualiza el gráfico solo si el backend lo acepta
+                          if (data.status === 'success') {
+                              updateChart(parseInt(gsrValue));
+                          }
+                      })
+                      .catch(err => console.error("Error enviando dato:", err));
                 }
-            })
-            .catch(error => {
-                console.error("Error al obtener datos:", error);
-                showAlert("Error al obtener datos del sensor GSR.");
-                stopReading();
-            });
-    }
-
-    function startReading() {
-        selectedPort = document.getElementById('portSelect').value;
-        if (!selectedPort) {
-            showAlert("Por favor, selecciona un puerto.");
-            return;
+            }
+        } catch (err) {
+            console.error("Error leyendo serial:", err);
+            break;
         }
-
-        readings = 0;
-        gsrData = [];
-        timeLabels = [];
-        chart.data.labels = timeLabels;
-        chart.data.datasets[0].data = gsrData;
-        chart.update();
-
-        intervalId = setInterval(fetchGSRData, 1000);
-        document.getElementById('toggleButton').textContent = 'Desactivar Sensor GSR';
-        console.log("Sensor activado.");
     }
+    serialReader.releaseLock();
+}
 
-    function stopReading() {
-        if (intervalId !== null) {
-            clearInterval(intervalId);
-            intervalId = null;
-            console.log("Sensor detenido.");
-        }
-        document.getElementById('toggleButton').textContent = 'Activar Sensor GSR';
-        readings = 0;
-    }
-
-    function calculateAverage(dataArray) {
-        const sum = dataArray.reduce((a, b) => a + b, 0);
-        return parseFloat((sum / dataArray.length).toFixed(2));
-    }
-
-    function determineEmotion(averageValue) {
-        if (averageValue < 100) return 'Relajado';
-        if (averageValue < 200) return 'Triste';
-        return 'Enojado';
-    }
-
-    function showEmotion(emotion) {
-        const emotionContainer = document.getElementById('emotionContainer');
-        emotionContainer.innerHTML = `
-            <div class="alert alert-info" role="alert">
-                Estado de ánimo: <strong>${emotion}</strong>
-            </div>
-        `;
-    }
-
-    function showAlert(message) {
-        const alertContainer = document.getElementById('alertContainer');
-        alertContainer.innerHTML = `
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                ${message}
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-        `;
-    }
-
-    function saveDataToBackend(averageValue, emotion) {
-        fetch('/save_gsr_data', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ gsr_average: averageValue, emotion: emotion })
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.status === 'success') console.log("Datos guardados correctamente.");
-            else console.error("Error al guardar datos:", result.message);
-        })
-        .catch(error => console.error("Error:", error));
-    }
-
-    document.getElementById('toggleButton').addEventListener('click', function () {
-        if (intervalId) stopReading();
-        else startReading();
-    });
-
-    document.addEventListener('DOMContentLoaded', () => {
-        fetch('/available_ports')
-            .then(response => response.json())
-            .then(data => {
-                const portSelect = document.getElementById('portSelect');
-                portSelect.innerHTML = '';
-                data.ports.forEach(port => {
-                    const option = document.createElement('option');
-                    option.value = port;
-                    option.textContent = port;
-                    portSelect.appendChild(option);
-                });
-            })
-            .catch(error => showAlert("Error al obtener puertos: " + error));
-    });
+document.addEventListener('DOMContentLoaded', () => {
+    initChart();
+});
 </script>
 {% endblock %}
