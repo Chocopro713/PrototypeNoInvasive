@@ -15,7 +15,7 @@
     </div>
     <div class="mt-3">
         <!-- Botón para conectar el Arduino vía Web Serial API -->
-        <button id="connectSerialWeb" class="btn btn-success mt-3">Conectar Arduino (Web Serial)</button>
+        <button id="connectSerialWeb" class="btn btn-success mt-3">Conectar Arduino</button>
         <div id="serialWebStatus" class="mt-2"></div>
     </div>
 </div>
@@ -28,6 +28,8 @@ let serialActive = false;
 let gsrData = [];
 let timeLabels = [];
 let chart = null;
+let tempReadings = [];
+let readingInterval = null;
 
 // Inicializa el gráfico
 function initChart() {
@@ -67,60 +69,106 @@ function updateChart(newValue) {
     chart.update();
 }
 
-// Botón para conectar/desconectar el Arduino
+// Determina el estado de ánimo según el promedio GSR
+function getEmotion(avg) {
+    if (avg < 200) return "Relajado 😌";
+    if (avg < 500) return "Normal 🙂";
+    if (avg < 800) return "Estresado 😰";
+    return "Muy estresado 😱";
+}
+
+// Botón para conectar/desconectar el Arduino y tomar 15 lecturas
 document.getElementById('connectSerialWeb').addEventListener('click', async () => {
-    if (serialActive) {
-        serialActive = false;
-        document.getElementById('serialWebStatus').innerText = "Desconectado.";
-        if (serialReader) serialReader.cancel();
-        if (serialPort) await serialPort.close();
-        return;
-    }
+    if (serialActive) return; // Evita múltiples ciclos
+    serialActive = true;
+    document.getElementById('connectSerialWeb').disabled = true;
+    document.getElementById('serialWebStatus').innerText = "¡Conectado! Tomando 15 lecturas...";
+    tempReadings = [];
     try {
         serialPort = await navigator.serial.requestPort();
         await serialPort.open({ baudRate: 9600 });
-        document.getElementById('serialWebStatus').innerText = "¡Conectado! Leyendo datos...";
-        serialActive = true;
         listenSerial();
     } catch (err) {
         document.getElementById('serialWebStatus').innerText = "Error: " + err;
+        serialActive = false;
+        document.getElementById('connectSerialWeb').disabled = false;
     }
 });
 
-// Lee datos del Arduino y los envía al backend
+// Lee datos del Arduino y toma 15 lecturas (una por segundo)
 async function listenSerial() {
     const decoder = new TextDecoderStream();
     const inputDone = serialPort.readable.pipeTo(decoder.writable);
     serialReader = decoder.readable.getReader();
 
-    while (serialActive) {
-        try {
-            const { value, done } = await serialReader.read();
-            if (done) break;
-            if (value) {
-                const gsrValue = value.trim();
-                if (gsrValue && !isNaN(gsrValue)) {
-                    // Envía el dato al backend Flask
-                    fetch('/receive_gsr_data', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ gsr_value: parseInt(gsrValue) })
-                    }).then(res => res.json())
-                      .then(data => {
-                          // Actualiza el gráfico solo si el backend lo acepta
-                          if (data.status === 'success') {
-                              updateChart(parseInt(gsrValue));
-                          }
-                      })
-                      .catch(err => console.error("Error enviando dato:", err));
+    let readingsTaken = 0;
+    tempReadings = [];
+
+    // Función auxiliar para leer un solo dato válido
+    async function readOneValue() {
+        while (true) {
+            try {
+                const { value, done } = await serialReader.read();
+                if (done) return null;
+                if (value) {
+                    const gsrValue = value.trim();
+                    if (gsrValue && !isNaN(gsrValue)) {
+                        return parseInt(gsrValue);
+                    }
                 }
+            } catch (err) {
+                console.error("Error leyendo serial:", err);
+                return null;
             }
-        } catch (err) {
-            console.error("Error leyendo serial:", err);
-            break;
         }
     }
-    serialReader.releaseLock();
+
+    // Toma 15 lecturas, una por segundo
+    for (let i = 0; i < 15; i++) {
+        if (!serialActive) break;
+        const gsrValue = await readOneValue();
+        if (gsrValue !== null && gsrValue >= 10) { // Excluye ceros
+            tempReadings.push(gsrValue);
+            updateChart(gsrValue);
+        }
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Espera 1 segundo
+        readingsTaken++;
+    }
+
+    // Fin del ciclo: libera el lector ANTES de cerrar el puerto
+    try {
+        if (serialReader) {
+            await serialReader.cancel();
+            await serialReader.releaseLock();
+        }
+        if (serialPort) await serialPort.close();
+    } catch (err) {
+        console.error("Error cerrando el puerto serial:", err);
+    }
+    serialActive = false;
+    document.getElementById('connectSerialWeb').disabled = false;
+
+    // Calcula el promedio solo con los valores distintos de cero
+    if (tempReadings.length > 0) {
+        const avg = Math.round(tempReadings.reduce((a, b) => a + b, 0) / tempReadings.length);
+        const emotion = getEmotion(avg);
+        alert(`Promedio GSR: ${avg}\nEstado de ánimo: ${emotion}`);
+        // Envía el promedio y el estado de ánimo al backend
+        fetch('/save_gsr_data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ gsr_average: avg, emotion: emotion })
+        }).then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                document.getElementById('serialWebStatus').innerText = "Datos guardados correctamente.";
+            } else {
+                document.getElementById('serialWebStatus').innerText = "Error al guardar datos: " + data.message;
+            }
+        });
+    } else {
+        document.getElementById('serialWebStatus').innerText = "No se pudieron tomar lecturas válidas (todas fueron 0).";
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
